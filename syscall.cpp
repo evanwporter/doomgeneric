@@ -13,17 +13,18 @@
 #include <sys/types.h>
 
 enum class SyscallNum : long {
-    Read = 0,
-    Write = 3,
-    Sbrk = 12,
+    Openat = 56,
     Close = 57,
+    Read = 63,
+    Write = 64,
     Fstat = 80,
-    Isatty = 89,
     Lseek = 62,
     Exit = 93,
+    Brk = 214,
 };
 
 extern "C" long __syscall3(long num, long arg0, long arg1, long arg2);
+extern "C" long __syscall4(long num, long arg0, long arg1, long arg2, long arg3);
 
 static int ret_to_errno(long ret) {
     if (ret < 0) {
@@ -50,6 +51,19 @@ extern "C" int _read(int fd, void* buf, size_t count) {
         static_cast<long>(fd),
         reinterpret_cast<long>(buf),
         static_cast<long>(count));
+
+    return ret_to_errno(ret);
+}
+
+extern "C" int _open(const char* path, int flags, int mode) {
+    constexpr long AT_FDCWD = -100;
+
+    long ret = __syscall4(
+        static_cast<long>(SyscallNum::Openat),
+        AT_FDCWD,
+        reinterpret_cast<long>(path),
+        static_cast<long>(flags),
+        static_cast<long>(mode));
 
     return ret_to_errno(ret);
 }
